@@ -44,15 +44,23 @@ async function run() {
             const keys = req.body;
             const query = { key: { $in: keys } }
             const products = await productCollection.find(query).toArray();
-            res.send(products);
+            res.json(products);
         });
 
         //add/POST orders api
         app.post('/orders', async (req, res) => {
             const order = req.body;
+            order.createdAt = new Date();
             const result = await orderCollection.insertOne(order);
             res.json(result);
-        })
+        });
+
+        //GET orders api
+        app.get('/orders', async (req, res) => {
+            const cursor = orderCollection.find({});
+            const orders = await cursor.toArray();
+            res.send(orders);
+        });
     }
     finally {
         // await client.close();
