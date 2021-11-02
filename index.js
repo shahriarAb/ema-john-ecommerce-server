@@ -4,6 +4,17 @@ const app = express();
 const cors = require('cors');
 require('dotenv').config();
 const port = process.env.PORT || 5500;
+var admin = require("firebase-admin");
+
+//firebase admin initialization
+
+
+var serviceAccount = require('./ena-john-simple-ecommerce-firebase-adminsdk-2e8a9-11a597f817.json');
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
+
 
 //middleware
 app.use(cors());
@@ -11,6 +22,14 @@ app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.8cjcg.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+async function verifyToken(req, res, next) {
+    if (req.headers?.authorization?.startsWith('Bearer ')) {
+        const idToken = req.headers.authorization.split(' ')[1];
+        console.log('inside separate function', idToken);
+    }
+    next();
+}
 
 async function run() {
     try {
@@ -55,8 +74,8 @@ async function run() {
             res.json(result);
         });
 
-        //GET orders api
-        app.get('/orders', async (req, res) => {
+        //GET orders api for specific email
+        app.get('/orders', verifyToken, async (req, res) => {
             let query = {};
             const email = req.query.email;
             if (email) {
