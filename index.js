@@ -26,7 +26,13 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function verifyToken(req, res, next) {
     if (req.headers?.authorization?.startsWith('Bearer ')) {
         const idToken = req.headers.authorization.split(' ')[1];
-        console.log('inside separate function', idToken);
+        try {
+            const decodedUser = await admin.auth().verifyIdToken(idToken);
+            req.decodedUserEmail = decodedUser.email;
+        }
+        catch {
+
+        }
     }
     next();
 }
@@ -76,14 +82,16 @@ async function run() {
 
         //GET orders api for specific email
         app.get('/orders', verifyToken, async (req, res) => {
-            let query = {};
             const email = req.query.email;
-            if (email) {
+            if (req.decodedUserEmail === email) {
                 query = { email: email };
+                const cursor = orderCollection.find(query);
+                const orders = await cursor.toArray();
+                res.send(orders);
             }
-            const cursor = orderCollection.find(query);
-            const orders = await cursor.toArray();
-            res.send(orders);
+            else {
+                res.status(401).json({ message: 'Unauthorized User!' });
+            }
         });
     }
     finally {
